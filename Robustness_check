@@ -1,0 +1,930 @@
+---
+title: "Peper_PruebaRob"
+author: "Hiarela"
+date: "2023-06-17"
+output: pdf_document
+---
+
+```{r}
+library(WDI)
+library(readr)
+library(dplyr)
+library(janitor)
+library(skimr)
+library(kableExtra)
+library(readxl)
+library(tidyr)
+library(broom)
+library(knitr)
+library(psych)
+library(DT)
+library(pander)
+library(AER)
+library(stargazer)
+```
+
+```{r}
+A_INSCRITOS_PUNTAJES_PDT_2022_PUB_MRUN <- read_csv2("C:/Users/Hiare/OneDrive/Escritorio/Uchile/OTOÑO 2023/Microeconomía 3/Paper propio/Bases de datos/A_INSCRITOS_PUNTAJES_PDT_2022_PUB_MRUN.csv")
+
+B_SOCIOECONOMICO_DOMICILIO_PDT_2022_PUB_MRUN <- read_delim("C:/Users/Hiare/OneDrive/Escritorio/Uchile/OTOÑO 2023/Microeconomía 3/Paper propio/Bases de datos/B_SOCIOECONOMICO_DOMICILIO_PDT_2022_PUB_MRUN.csv",
+                                                           delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+Base_0 <- merge.data.frame(A_INSCRITOS_PUNTAJES_PDT_2022_PUB_MRUN,B_SOCIOECONOMICO_DOMICILIO_PDT_2022_PUB_MRUN, by.x = c("MRUN"),
+                                 by.y = c("MRUN"))
+
+simce8b2017_alu_mrun_final_SEG <- read_excel("C:/Users/Hiare/OneDrive/Escritorio/Uchile/OTOÑO 2023/Microeconomía 3/Paper propio/Bases de datos/Simce4b2013_privadas-SEG/Archivos XLS (XLSX)/simce4b2013_alu_mrun_privada_final-SEG.xlsx")
+
+Base <- merge.data.frame(Base_0,simce8b2017_alu_mrun_final_SEG,by.x = c("MRUN"),
+                                 by.y = c("mrun"))
+
+Base <- Base %>%
+  mutate(SIMCEptjMATE = as.numeric(ptje_mate4b_alu)) %>%
+  mutate(SIMCEptjLENG = as.numeric(ptje_lect4b_alu)) 
+
+
+Base <- Base[!is.na(Base$SIMCEptjMATE),]
+
+Base <- Base[!is.na(Base$SIMCEptjLENG),]
+
+Base <- Base[!is.na(Base$EDUCACION_MADRE),]
+Base <- Base[!is.na(Base$EDUCACION_PADRE),]
+Base <- Base[!is.na(Base$PTJE_NEM),]
+
+Base <- Base[!is.na(Base$COD_SEXO),]
+
+Base <- Base[!is.na(Base$MATE_ACTUAL),]
+
+Base <- Base[!is.na(Base$CLEC_ACTUAL),]
+
+
+Base <- Base[!is.na(Base$INGRESO_PERCAPITA_GRUPO_FA),]
+
+Base$COD_SEXO <- ifelse(Base$COD_SEXO==1,1,0)
+
+Base$INGRESO_PERCAPITA_GRUPO_FA <- ifelse(Base$INGRESO_PERCAPITA_GRUPO_FA==1,67867/2,ifelse(Base$INGRESO_PERCAPITA_GRUPO_FA==2,mean(67868,107284),ifelse(Base$INGRESO_PERCAPITA_GRUPO_FA==3,mean(107285,142173),ifelse(Base$INGRESO_PERCAPITA_GRUPO_FA==4,mean(142174,177045),ifelse(Base$INGRESO_PERCAPITA_GRUPO_FA==5,mean(177046,215995),ifelse(Base$INGRESO_PERCAPITA_GRUPO_FA==6,mean(215996,271791),ifelse(Base$INGRESO_PERCAPITA_GRUPO_FA==7,mean(271792,345328),ifelse(Base$INGRESO_PERCAPITA_GRUPO_FA==8,mean(345329,464965),ifelse(Base$INGRESO_PERCAPITA_GRUPO_FA==9,mean(464966,756201),ifelse(Base$INGRESO_PERCAPITA_GRUPO_FA==10,756202,ifelse(Base$INGRESO_PERCAPITA_GRUPO_FA==99, NA, NA)))))))))))
+
+Base <- Base[!is.na(Base$INGRESO_PERCAPITA_GRUPO_FA),]
+
+Base$INGRESO_PERCAPITA_GRUPO_FA <- Base$INGRESO_PERCAPITA_GRUPO_FA/1000
+
+############################################### EDUACIÓN MADRE 2:
+
+Base$educacion_madre_cont <- ifelse(Base$EDUCACION_MADRE == 1, 0, 
+                         ifelse(Base$EDUCACION_MADRE == 2, 2,
+                         ifelse(Base$EDUCACION_MADRE == 3, 12,
+                         ifelse(Base$EDUCACION_MADRE == 4, 6,
+                         ifelse(Base$EDUCACION_MADRE == 5, 9,
+                         ifelse(Base$EDUCACION_MADRE %in% c(6, 7, 8, 9), 12,
+                         ifelse(Base$EDUCACION_MADRE == 10, 13.5,
+                         ifelse(Base$EDUCACION_MADRE == 11, 16,
+                         ifelse(Base$EDUCACION_MADRE == 12, 20, NA)))))))))
+
+Base <- Base[!is.na(Base$educacion_madre_cont),]
+
+
+# Modificar la variable educacion_madre_cont
+Base$AñosEducMadre <- ifelse(Base$EDUCACION_MADRE==1,Base$educacion_madre_cont,ifelse(Base$EDUCACION_MADRE==2&Base$COMPLETO_EDUCACION_MADRE=="S",Base$educacion_madre_cont,ifelse(Base$EDUCACION_MADRE==2&Base$COMPLETO_EDUCACION_MADRE=="N",0,ifelse(Base$EDUCACION_MADRE==3&Base$COMPLETO_EDUCACION_MADRE=="S",Base$educacion_madre_cont,ifelse(Base$EDUCACION_MADRE==3&Base$COMPLETO_EDUCACION_MADRE=="N",0,ifelse(Base$EDUCACION_MADRE==4&Base$COMPLETO_EDUCACION_MADRE=="S",Base$educacion_madre_cont,ifelse(Base$EDUCACION_MADRE==4&Base$COMPLETO_EDUCACION_MADRE=="N",2,ifelse(Base$EDUCACION_MADRE==5&Base$COMPLETO_EDUCACION_MADRE=="S",Base$educacion_madre_cont,ifelse(Base$EDUCACION_MADRE==5&Base$COMPLETO_EDUCACION_MADRE=="N",6,ifelse(Base$EDUCACION_MADRE==6&Base$COMPLETO_EDUCACION_MADRE=="S",Base$educacion_madre_cont,ifelse(Base$EDUCACION_MADRE==6&Base$COMPLETO_EDUCACION_MADRE=="N",9,ifelse(Base$EDUCACION_MADRE==7&Base$COMPLETO_EDUCACION_MADRE=="S",Base$educacion_madre_cont,ifelse(Base$EDUCACION_MADRE==7&Base$COMPLETO_EDUCACION_MADRE=="N",9,ifelse(Base$EDUCACION_MADRE==8&Base$COMPLETO_EDUCACION_MADRE=="S",Base$educacion_madre_cont,ifelse(Base$EDUCACION_MADRE==8&Base$COMPLETO_EDUCACION_MADRE=="N",9,ifelse(Base$EDUCACION_MADRE==9&Base$COMPLETO_EDUCACION_MADRE=="S",Base$educacion_madre_cont,ifelse(Base$EDUCACION_MADRE==9&Base$COMPLETO_EDUCACION_MADRE=="N",9,ifelse(Base$EDUCACION_MADRE==10&Base$COMPLETO_EDUCACION_MADRE=="S",Base$educacion_madre_cont,ifelse(Base$EDUCACION_MADRE==10&Base$COMPLETO_EDUCACION_MADRE=="N",12,ifelse(Base$EDUCACION_MADRE==11&Base$COMPLETO_EDUCACION_MADRE=="S",Base$educacion_madre_cont,ifelse(Base$EDUCACION_MADRE==11&Base$COMPLETO_EDUCACION_MADRE=="N",13.5,ifelse(Base$EDUCACION_MADRE==12&Base$COMPLETO_EDUCACION_MADRE=="S",Base$educacion_madre_cont,ifelse(Base$EDUCACION_MADRE==12&Base$COMPLETO_EDUCACION_MADRE=="N",16,NA)))))))))))))))))))))))
+
+Base <- Base[!is.na(Base$AñosEducMadre),]
+
+################################################ EDUCACIÓN PADRE 2:
+
+Base$educacion_padre_cont <- ifelse(Base$EDUCACION_PADRE == 1, 0, 
+                         ifelse(Base$EDUCACION_PADRE == 2, 2,
+                         ifelse(Base$EDUCACION_PADRE == 3, 12,
+                         ifelse(Base$EDUCACION_PADRE == 4, 6,
+                         ifelse(Base$EDUCACION_PADRE == 5, 9,
+                         ifelse(Base$EDUCACION_PADRE %in% c(6, 7, 8, 9), 12,
+                         ifelse(Base$EDUCACION_PADRE == 10, 13.5,
+                         ifelse(Base$EDUCACION_PADRE == 11, 16,
+                         ifelse(Base$EDUCACION_PADRE == 12, 20, NA)))))))))
+
+Base <- Base[!is.na(Base$educacion_padre_cont),]
+
+
+# Modificar la variable educacion_padre_cont
+Base$AñosEducPadre <- ifelse(Base$EDUCACION_PADRE==1,Base$educacion_padre_cont,ifelse(Base$EDUCACION_PADRE==2&Base$COMPLETO_EDUCACION_PADRE=="S",Base$educacion_padre_cont,ifelse(Base$EDUCACION_PADRE==2&Base$COMPLETO_EDUCACION_PADRE=="N",0,ifelse(Base$EDUCACION_PADRE==3&Base$COMPLETO_EDUCACION_PADRE=="S",Base$educacion_padre_cont,ifelse(Base$EDUCACION_PADRE==3&Base$COMPLETO_EDUCACION_PADRE=="N",0,ifelse(Base$EDUCACION_PADRE==4&Base$COMPLETO_EDUCACION_PADRE=="S",Base$educacion_padre_cont,ifelse(Base$EDUCACION_PADRE==4&Base$COMPLETO_EDUCACION_PADRE=="N",2,ifelse(Base$EDUCACION_PADRE==5&Base$COMPLETO_EDUCACION_PADRE=="S",Base$educacion_padre_cont,ifelse(Base$EDUCACION_PADRE==5&Base$COMPLETO_EDUCACION_PADRE=="N",6,ifelse(Base$EDUCACION_PADRE==6&Base$COMPLETO_EDUCACION_PADRE=="S",Base$educacion_padre_cont,ifelse(Base$EDUCACION_PADRE==6&Base$COMPLETO_EDUCACION_PADRE=="N",9,ifelse(Base$EDUCACION_PADRE==7&Base$COMPLETO_EDUCACION_PADRE=="S",Base$educacion_padre_cont,ifelse(Base$EDUCACION_PADRE==7&Base$COMPLETO_EDUCACION_PADRE=="N",9,ifelse(Base$EDUCACION_PADRE==8&Base$COMPLETO_EDUCACION_PADRE=="S",Base$educacion_padre_cont,ifelse(Base$EDUCACION_PADRE==8&Base$COMPLETO_EDUCACION_PADRE=="N",9,ifelse(Base$EDUCACION_PADRE==9&Base$COMPLETO_EDUCACION_PADRE=="S",Base$educacion_padre_cont,ifelse(Base$EDUCACION_PADRE==9&Base$COMPLETO_EDUCACION_PADRE=="N",9,ifelse(Base$EDUCACION_PADRE==10&Base$COMPLETO_EDUCACION_PADRE=="S",Base$educacion_padre_cont,ifelse(Base$EDUCACION_PADRE==10&Base$COMPLETO_EDUCACION_PADRE=="N",12,ifelse(Base$EDUCACION_PADRE==11&Base$COMPLETO_EDUCACION_PADRE=="S",Base$educacion_padre_cont,ifelse(Base$EDUCACION_PADRE==11&Base$COMPLETO_EDUCACION_PADRE=="N",13.5,ifelse(Base$EDUCACION_PADRE==12&Base$COMPLETO_EDUCACION_PADRE=="S",Base$educacion_padre_cont,ifelse(Base$EDUCACION_PADRE==12&Base$COMPLETO_EDUCACION_PADRE=="N",16,NA)))))))))))))))))))))))
+
+Base <- Base[!is.na(Base$AñosEducPadre),]
+
+```
+
+
+
+
+```{r}
+# ESTADÍSTICA DESCRIPTIVA:
+
+Base <-Base[!is.na(Base$MATE_ACTUAL),]
+Base <-Base[!is.na(Base$CLEC_ACTUAL),]
+Base <-Base[!is.na(Base$SIMCEptjMATE),]
+Base <-Base[!is.na(Base$SIMCEptjLENG),]
+Base <-Base[!is.na(Base$PTJE_NEM),]
+Base <-Base[!is.na(Base$COD_SEXO),]
+Base <-Base[!is.na(Base$AñosEducMadre),]
+Base <-Base[!is.na(Base$AñosEducPadre),]
+Base <-Base[!is.na(Base$INGRESO_PERCAPITA_GRUPO_FA),]
+
+media_PDTMATE <- mean(Base$MATE_ACTUAL)
+desviacion_PDTMATE <- sd(Base$MATE_ACTUAL)
+
+PDTMATE <- rbind(media_PDTMATE,desviacion_PDTMATE)
+
+media_PDTCLEC <- mean(Base$CLEC_ACTUAL)
+desviacion_PDTCLEC <- sd(Base$CLEC_ACTUAL)
+
+PDTCLEC <- rbind(media_PDTCLEC,desviacion_PDTCLEC)
+
+Media_SIMCEMat <- mean(Base$SIMCEptjMATE)
+SD_SIMCEMat <- sd(Base$SIMCEptjMATE)
+
+SIMCEMat <- rbind(Media_SIMCEMat,SD_SIMCEMat)
+
+Media_SIMCELeng <- mean(Base$SIMCEptjLENG)
+SD_SIMCELeng <- sd(Base$SIMCEptjLENG)
+
+SIMCELeng <- rbind(Media_SIMCELeng,SD_SIMCELeng)
+
+Media_NEM <- mean(Base$PTJE_NEM)
+SD_NEM <- sd(Base$PTJE_NEM)
+
+NEM <- rbind(Media_NEM,SD_NEM)
+
+Media_codsexo <- mean(Base$COD_SEXO)
+SD_codsexo <- sd(Base$COD_SEXO)
+
+Masculino <- rbind(Media_codsexo,SD_codsexo)
+
+Media_AñosEducMadre <- mean(Base$AñosEducMadre)
+SD_AñosEducMadre <- sd(Base$AñosEducMadre)
+
+AñosEducMadre <- rbind(Media_AñosEducMadre,SD_AñosEducMadre)
+
+Media_AñosEducPadre <- mean(Base$AñosEducPadre)
+SD_AñosEducPadre <- sd(Base$AñosEducPadre)
+
+AñosEducPadre <- rbind(Media_AñosEducPadre,SD_AñosEducPadre)
+
+Media_INGRESO_PERCAPITA_GRUPO_FA <- mean(Base$INGRESO_PERCAPITA_GRUPO_FA)
+SD_INGRESO_PERCAPITA_GRUPO_FA <- sd(Base$INGRESO_PERCAPITA_GRUPO_FA)
+
+INGRESO_PERCAPITA_GRUPO_FA_0 <- rbind(Media_INGRESO_PERCAPITA_GRUPO_FA,SD_INGRESO_PERCAPITA_GRUPO_FA)
+
+
+Observaciones <- length(Base$MATE_ACTUAL)
+
+TOTAL <- rbind.data.frame(PDTMATE,PDTCLEC,SIMCEMat,SIMCELeng,NEM,Masculino,AñosEducMadre,AñosEducPadre,INGRESO_PERCAPITA_GRUPO_FA_0,Observaciones)
+
+# MUNICIPALES:
+Base$Municipales <- ifelse(Base$DEPENDENCIA==1|Base$DEPENDENCIA==2|Base$DEPENDENCIA==5|Base$DEPENDENCIA==6,1,0)
+
+BaseMunicipales <- Base[!Base$Municipales==0,]
+
+BaseMunicipales <-BaseMunicipales[!is.na(BaseMunicipales$MATE_ACTUAL),]
+BaseMunicipales <-BaseMunicipales[!is.na(BaseMunicipales$CLEC_ACTUAL),]
+BaseMunicipales <-BaseMunicipales[!is.na(BaseMunicipales$SIMCEptjMATE),]
+BaseMunicipales <-BaseMunicipales[!is.na(BaseMunicipales$SIMCEptjLENG),]
+BaseMunicipales <-BaseMunicipales[!is.na(BaseMunicipales$PTJE_NEM),]
+BaseMunicipales <-BaseMunicipales[!is.na(BaseMunicipales$COD_SEXO),]
+BaseMunicipales <-BaseMunicipales[!is.na(BaseMunicipales$AñosEducMadre),]
+BaseMunicipales <-BaseMunicipales[!is.na(BaseMunicipales$AñosEducPadre),]
+BaseMunicipales <-BaseMunicipales[!is.na(BaseMunicipales$INGRESO_PERCAPITA_GRUPO_FA),]
+
+media_PDTMATE_M <- mean(BaseMunicipales$MATE_ACTUAL)
+desviacion_PDTMATE_M <- sd(BaseMunicipales$MATE_ACTUAL)
+
+PDTMATE_M <- rbind(media_PDTMATE_M,desviacion_PDTMATE_M)
+
+media_PDTCLEC_M <- mean(BaseMunicipales$CLEC_ACTUAL)
+desviacion_PDTCLEC_M <- sd(BaseMunicipales$CLEC_ACTUAL)
+
+PDTCLEC_M <- rbind(media_PDTCLEC_M,desviacion_PDTCLEC_M)
+
+Media_SIMCEMat_M <- mean(BaseMunicipales$SIMCEptjMATE)
+SD_SIMCEMat_M <- sd(BaseMunicipales$SIMCEptjMATE)
+
+SIMCEMat_M <- rbind(Media_SIMCEMat_M,SD_SIMCEMat_M)
+
+Media_SIMCELeng_M <- mean(BaseMunicipales$SIMCEptjLENG)
+SD_SIMCELeng_M <- sd(BaseMunicipales$SIMCEptjLENG)
+
+SIMCELeng_M <- rbind(Media_SIMCELeng_M,SD_SIMCELeng_M)
+
+Media_NEM_M <- mean(BaseMunicipales$PTJE_NEM)
+SD_NEM_M <- sd(BaseMunicipales$PTJE_NEM)
+
+NEM_M <- rbind(Media_NEM_M,SD_NEM_M)
+
+Media_codsexo_M <- mean(BaseMunicipales$COD_SEXO)
+SD_codsexo_M <- sd(BaseMunicipales$COD_SEXO)
+
+Masculino_M <- rbind(Media_codsexo_M,SD_codsexo_M)
+
+Media_AñosEducMadre_M <- mean(BaseMunicipales$AñosEducMadre)
+SD_AñosEducMadre_M <- sd(BaseMunicipales$AñosEducMadre)
+
+AñosEducMadre_M <- rbind(Media_AñosEducMadre_M,SD_AñosEducMadre_M)
+
+Media_AñosEducPadre_M <- mean(BaseMunicipales$AñosEducPadre)
+SD_AñosEducPadre_M <- sd(BaseMunicipales$AñosEducPadre)
+
+AñosEducPadre_M <- rbind(Media_AñosEducPadre_M,SD_AñosEducPadre_M)
+
+Media_INGRESO_PERCAPITA_GRUPO_FA_M <- mean(BaseMunicipales$INGRESO_PERCAPITA_GRUPO_FA)
+SD_INGRESO_PERCAPITA_GRUPO_FA_M <- sd(BaseMunicipales$INGRESO_PERCAPITA_GRUPO_FA)
+
+INGRESO_PERCAPITA_GRUPO_FA_0_M <- rbind(Media_INGRESO_PERCAPITA_GRUPO_FA_M,SD_INGRESO_PERCAPITA_GRUPO_FA_M)
+
+Observaciones_M <- length(BaseMunicipales$MATE_ACTUAL)
+
+Públicos <- rbind.data.frame(PDTMATE_M,PDTCLEC_M,SIMCEMat_M,SIMCELeng_M,NEM_M,Masculino_M,AñosEducMadre_M,AñosEducPadre_M,INGRESO_PERCAPITA_GRUPO_FA_0_M,Observaciones_M)
+
+# SUBVENCIONADOS:
+
+Base$Subvencionados <- ifelse(Base$DEPENDENCIA==3,1,0)
+
+BaseSubvencionados <- Base[!Base$Subvencionados==0,]
+
+BaseSubvencionados <-BaseSubvencionados[!is.na(BaseSubvencionados$MATE_ACTUAL),]
+BaseSubvencionados <-BaseSubvencionados[!is.na(BaseSubvencionados$CLEC_ACTUAL),]
+BaseSubvencionados <-BaseSubvencionados[!is.na(BaseSubvencionados$SIMCEptjMATE),]
+BaseSubvencionados <-BaseSubvencionados[!is.na(BaseSubvencionados$SIMCEptjLENG),]
+BaseSubvencionados <-BaseSubvencionados[!is.na(BaseSubvencionados$PTJE_NEM),]
+BaseSubvencionados <-BaseSubvencionados[!is.na(BaseSubvencionados$COD_SEXO),]
+BaseSubvencionados <-BaseSubvencionados[!is.na(BaseSubvencionados$AñosEducMadre),]
+BaseSubvencionados <-BaseSubvencionados[!is.na(BaseSubvencionados$AñosEducPadre),]
+BaseSubvencionados <-BaseSubvencionados[!is.na(BaseSubvencionados$INGRESO_PERCAPITA_GRUPO_FA),]
+
+media_PDTMATE_BaseSubvencionados <- mean(BaseSubvencionados$MATE_ACTUAL)
+desviacion_PDTMATE_BaseSubvencionados <- sd(BaseSubvencionados$MATE_ACTUAL)
+
+PDTMATE_BaseSubvencionados <- rbind(media_PDTMATE_BaseSubvencionados,desviacion_PDTMATE_BaseSubvencionados)
+
+media_PDTCLEC_BaseSubvencionados <- mean(BaseSubvencionados$CLEC_ACTUAL)
+desviacion_PDTCLEC_BaseSubvencionados <- sd(BaseSubvencionados$CLEC_ACTUAL)
+
+PDTCLEC_BaseSubvencionados <- rbind(media_PDTCLEC_BaseSubvencionados,desviacion_PDTCLEC_BaseSubvencionados)
+
+Media_SIMCEMat_BaseSubvencionados <- mean(BaseSubvencionados$SIMCEptjMATE)
+SD_SIMCEMat_BaseSubvencionados <- sd(BaseSubvencionados$SIMCEptjMATE)
+
+SIMCEMat_BaseSubvencionados <- rbind(Media_SIMCEMat_BaseSubvencionados,SD_SIMCEMat_BaseSubvencionados)
+
+Media_SIMCELeng_BaseSubvencionados <- mean(BaseSubvencionados$SIMCEptjLENG)
+SD_SIMCELeng_BaseSubvencionados <- sd(BaseSubvencionados$SIMCEptjLENG)
+
+SIMCELeng_BaseSubvencionados <- rbind(Media_SIMCELeng_BaseSubvencionados,SD_SIMCELeng_BaseSubvencionados)
+
+Media_NEM_BaseSubvencionados <- mean(BaseSubvencionados$PTJE_NEM)
+SD_NEM_BaseSubvencionados <- sd(BaseSubvencionados$PTJE_NEM)
+
+NEM_BaseSubvencionados <- rbind(Media_NEM_BaseSubvencionados,SD_NEM_BaseSubvencionados)
+
+Media_codsexo_BaseSubvencionados <- mean(BaseSubvencionados$COD_SEXO)
+SD_codsexo_BaseSubvencionados <- sd(BaseSubvencionados$COD_SEXO)
+
+Masculino_BaseSubvencionados <- rbind(Media_codsexo_BaseSubvencionados,SD_codsexo_BaseSubvencionados)
+
+Media_AñosEducMadre_BaseSubvencionados <- mean(BaseSubvencionados$AñosEducMadre)
+SD_AñosEducMadre_BaseSubvencionados <- sd(BaseSubvencionados$AñosEducMadre)
+
+AñosEducMadre_BaseSubvencionados <- rbind(Media_AñosEducMadre_BaseSubvencionados,SD_AñosEducMadre_BaseSubvencionados)
+
+Media_AñosEducPadre_BaseSubvencionados <- mean(BaseSubvencionados$AñosEducPadre)
+SD_AñosEducPadre_BaseSubvencionados <- sd(BaseSubvencionados$AñosEducPadre)
+
+AñosEducPadre_BaseSubvencionados<- rbind(Media_AñosEducPadre_BaseSubvencionados,SD_AñosEducPadre_BaseSubvencionados)
+
+Media_INGRESO_PERCAPITA_GRUPO_FA_BaseSubvencionados <- mean(BaseSubvencionados$INGRESO_PERCAPITA_GRUPO_FA)
+SD_INGRESO_PERCAPITA_GRUPO_FA_BaseSubvencionados <- sd(BaseSubvencionados$INGRESO_PERCAPITA_GRUPO_FA)
+
+INGRESO_PERCAPITA_GRUPO_FA_0_BaseSubvencionados <- rbind(Media_INGRESO_PERCAPITA_GRUPO_FA_BaseSubvencionados,SD_INGRESO_PERCAPITA_GRUPO_FA_BaseSubvencionados)
+
+Observaciones_BaseSubvencionados <- length(BaseSubvencionados$MATE_ACTUAL)
+
+SUBVENCIONADOS <- rbind.data.frame(PDTMATE_BaseSubvencionados,PDTCLEC_BaseSubvencionados,SIMCEMat_BaseSubvencionados,SIMCELeng_BaseSubvencionados,NEM_BaseSubvencionados,Masculino_BaseSubvencionados,AñosEducMadre_BaseSubvencionados,AñosEducPadre_BaseSubvencionados,INGRESO_PERCAPITA_GRUPO_FA_0_BaseSubvencionados,Observaciones_BaseSubvencionados)
+
+# PARTICULARES 
+
+Base$Particulares <- ifelse(Base$DEPENDENCIA==4,1,0)
+
+BaseParticualares <- Base[!Base$Particulares==0,]
+
+BaseParticualares <-BaseParticualares[!is.na(BaseParticualares$MATE_ACTUAL),]
+BaseParticualares <-BaseParticualares[!is.na(BaseParticualares$CLEC_ACTUAL),]
+BaseParticualares <-BaseParticualares[!is.na(BaseParticualares$SIMCEptjMATE),]
+BaseParticualares <-BaseParticualares[!is.na(BaseParticualares$SIMCEptjLENG),]
+BaseParticualares <-BaseParticualares[!is.na(BaseParticualares$PTJE_NEM),]
+BaseParticualares <-BaseParticualares[!is.na(BaseParticualares$COD_SEXO),]
+BaseParticualares <-BaseParticualares[!is.na(BaseParticualares$AñosEducMadre),]
+BaseParticualares <-BaseParticualares[!is.na(BaseParticualares$AñosEducPadre),]
+BaseParticualares <-BaseParticualares[!is.na(BaseParticualares$INGRESO_PERCAPITA_GRUPO_FA),]
+
+media_PDTMATE_BaseParticualares <- mean(BaseParticualares$MATE_ACTUAL)
+desviacion_PDTMATE_BaseParticualares <- sd(BaseParticualares$MATE_ACTUAL)
+
+PDTMATE_BaseParticualares <- rbind(media_PDTMATE_BaseParticualares,desviacion_PDTMATE_BaseParticualares)
+
+media_PDTCLEC_BaseParticualares <- mean(BaseParticualares$CLEC_ACTUAL)
+desviacion_PDTCLEC_BaseParticualares <- sd(BaseParticualares$CLEC_ACTUAL)
+
+PDTCLEC_BaseParticualares <- rbind(media_PDTCLEC_BaseParticualares,desviacion_PDTCLEC_BaseParticualares)
+
+Media_SIMCEMat_BaseParticualares <- mean(BaseParticualares$SIMCEptjMATE)
+SD_SIMCEMat_BaseParticualares <- sd(BaseParticualares$SIMCEptjMATE)
+
+SIMCEMat_BaseParticualares <- rbind(Media_SIMCEMat_BaseParticualares,SD_SIMCEMat_BaseParticualares)
+
+Media_SIMCELeng_BaseParticualares <- mean(BaseParticualares$SIMCEptjLENG)
+SD_SIMCELeng_BaseParticualares <- sd(BaseParticualares$SIMCEptjLENG)
+
+SIMCELeng_BaseParticualares <- rbind(Media_SIMCELeng_BaseParticualares,SD_SIMCELeng_BaseParticualares)
+
+Media_NEM_BaseParticualares <- mean(BaseParticualares$PTJE_NEM)
+SD_NEM_BaseParticualares <- sd(BaseParticualares$PTJE_NEM)
+
+NEM_BaseParticualares <- rbind(Media_NEM_BaseParticualares,SD_NEM_BaseParticualares)
+
+Media_codsexo_BaseParticualares <- mean(BaseParticualares$COD_SEXO)
+SD_codsexo_BaseParticualares <- sd(BaseParticualares$COD_SEXO)
+
+Masculino_BaseParticualares <- rbind(Media_codsexo_BaseParticualares,SD_codsexo_BaseParticualares)
+
+Media_AñosEducMadre_BaseParticualares <- mean(BaseParticualares$AñosEducMadre)
+SD_AñosEducMadre_BaseParticualares <- sd(BaseParticualares$AñosEducMadre)
+
+AñosEducMadre_BaseParticualares <- rbind(Media_AñosEducMadre_BaseParticualares,SD_AñosEducMadre_BaseParticualares)
+
+Media_AñosEducPadre_BaseParticualares <- mean(BaseParticualares$AñosEducPadre)
+SD_AñosEducPadre_BaseParticualares <- sd(BaseParticualares$AñosEducPadre)
+
+AñosEducPadre_BaseParticualares<- rbind(Media_AñosEducPadre_BaseParticualares,SD_AñosEducPadre_BaseParticualares)
+
+Media_INGRESO_PERCAPITA_GRUPO_FA_BaseParticualares <- mean(BaseParticualares$INGRESO_PERCAPITA_GRUPO_FA)
+SD_INGRESO_PERCAPITA_GRUPO_FA_BaseParticualares <- sd(BaseParticualares$INGRESO_PERCAPITA_GRUPO_FA)
+
+INGRESO_PERCAPITA_GRUPO_FA_0_BaseParticualares <- rbind(Media_INGRESO_PERCAPITA_GRUPO_FA_BaseParticualares,SD_INGRESO_PERCAPITA_GRUPO_FA_BaseParticualares)
+
+Observaciones_BaseParticualares <- length(BaseParticualares$MATE_ACTUAL)
+
+PARTICULARES <- rbind.data.frame(PDTMATE_BaseParticualares,PDTCLEC_BaseParticualares,SIMCEMat_BaseParticualares,SIMCELeng_BaseParticualares,NEM_BaseParticualares,Masculino_BaseParticualares,AñosEducMadre_BaseParticualares,AñosEducPadre_BaseParticualares,INGRESO_PERCAPITA_GRUPO_FA_0_BaseParticualares,Observaciones_BaseParticualares)
+
+
+ES_TABLA <- round(cbind.data.frame(TOTAL$V1,Públicos$V1,SUBVENCIONADOS$V1,PARTICULARES$V1),2)
+
+row.names(ES_TABLA) <- c("PDT Matemática","1 ","PDT Comprensión Lectora"," 2","SIMCE Matemática"," 3","SIMCE Comprensión Lectora"," 4","NEM"," 5","Masculino = 1"," 6","Años educación madre"," 7","Años educación padre"," 8","Ingreso per cápita grupo familiar"," 9","Observaciones")
+
+colnames(ES_TABLA) <- c("Total","Municipal","Particular Subvencionado","Particular Pagado")
+
+tabla <- xtable(ES_TABLA)
+xtable(ES_TABLA, type = "latex", title = "Estadísticas descriptivas", 
+          align = TRUE, digits = 2, header = FALSE)
+```
+
+
+
+```{r}
+# TUNEAR BASE
+Base <- Base %>%
+    mutate(PTJE_NEM = (Base$PTJE_NEM- mean(Base$PTJE_NEM))/sd(Base$PTJE_NEM))
+
+Base <- Base %>%
+    mutate(CLEC_ACTUAL = (Base$CLEC_ACTUAL- mean(Base$CLEC_ACTUAL))/sd(Base$CLEC_ACTUAL))
+
+
+Base <- Base %>%
+    mutate(MATE_ACTUAL = (Base$MATE_ACTUAL- mean(Base$MATE_ACTUAL))/sd(Base$MATE_ACTUAL))
+
+
+Base <- Base %>%
+    mutate(SIMCEptjMATE = (Base$SIMCEptjMATE- mean(Base$SIMCEptjMATE))/sd(Base$SIMCEptjMATE))
+
+
+Base <- Base %>%
+    mutate(SIMCEptjLENG = (Base$SIMCEptjLENG- mean(Base$SIMCEptjLENG))/sd(Base$SIMCEptjLENG))
+```
+
+
+
+
+```{r}
+
+############################ SIN 
+### ECUACIÓN 1 POR MCO | MATEMÁTICA:
+
+PDT_0_MATE = lm(MATE_ACTUAL ~ PTJE_NEM, data = Base)
+
+PDT_1_MATE = lm(MATE_ACTUAL ~ PTJE_NEM + COD_SEXO + AñosEducMadre + AñosEducPadre , data = Base)
+
+PDT_2_MATE = lm(MATE_ACTUAL ~ PTJE_NEM + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = Base)
+
+
+# VARIABLE INSTRUMENTAL | MATEMÁTICA:
+
+instrumental_model_MATE <- lm(PTJE_NEM ~ SIMCEptjMATE, data = Base)
+
+NEM_hat_MATE <- predict(instrumental_model_MATE, newdata = Base)
+
+mco_model_MATE <- lm(MATE_ACTUAL ~ NEM_hat_MATE + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = Base)
+
+stargazer(PDT_0_MATE,PDT_1_MATE,PDT_2_MATE,mco_model_MATE,align=TRUE, type="latex")
+
+PDT_MATE_REG <- list(PDT_0_MATE,PDT_1_MATE,PDT_2_MATE,mco_model_MATE)
+
+stargazer(instrumental_model_MATE,align=TRUE, type="latex")
+
+stargazer(PDT_MATE_REG,align=TRUE, type="latex")
+
+stargazer(mco_model_MATE,align=TRUE, type="latex")
+
+
+### ECUACIÓN 1 POR MCO | LENGUAJE:
+
+PDT_L_0 = lm(CLEC_ACTUAL ~ PTJE_NEM, data = Base)
+
+PDT_L_1 = lm(CLEC_ACTUAL ~ PTJE_NEM + COD_SEXO, data = Base)
+
+PDT_L_2 = lm(CLEC_ACTUAL ~ PTJE_NEM + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = Base)
+
+# VARIABLE INSTRUMENTAL PARA PDT LENGUAJE.
+
+instrumental_model_L <- lm(PTJE_NEM ~ SIMCEptjLENG, data = Base)
+
+NEM_hat_L <- predict(instrumental_model_L, newdata = Base)
+
+mco_model_L <- lm(CLEC_ACTUAL ~ NEM_hat_L + COD_SEXO + AñosEducMadre + AñosEducPadre+ INGRESO_PERCAPITA_GRUPO_FA, data = Base)
+
+PDT_LENGUAJE_REG <- list(PDT_L_0,PDT_L_1 ,PDT_L_2,mco_model_L)
+
+#########
+
+stargazer(instrumental_model_L,align=TRUE, type="latex")
+
+stargazer(PDT_LENGUAJE_REG,align=TRUE, type="latex")
+```
+
+
+```{r}
+
+# MUNICIPALES
+
+# MATEMÁTICA:
+
+Base$Municipales <- ifelse(Base$DEPENDENCIA==1|Base$DEPENDENCIA==2|Base$DEPENDENCIA==5|Base$DEPENDENCIA==6,1,0)
+
+BaseMunicipales <- Base[!Base$Municipales==0,]
+
+
+PDT_0_Municipales_M = lm(MATE_ACTUAL ~ PTJE_NEM + Municipales, data = BaseMunicipales)
+
+PDT_0_Municipales_M[["coefficients"]][["PTJE_NEM"]]
+
+PDT_1_Municipales_M = lm(MATE_ACTUAL ~ PTJE_NEM + Municipales + COD_SEXO + AñosEducMadre + AñosEducPadre, data = BaseMunicipales)
+
+PDT_2_Municipales_M = lm(MATE_ACTUAL ~ PTJE_NEM + Municipales + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = BaseMunicipales)
+
+Regresiones_0_MATE_Municipales <- list(PDT_0_Municipales_M,PDT_1_Municipales_M,PDT_2_Municipales_M)
+
+stargazer(Regresiones_0_MATE_Municipales,align=TRUE, type="latex")
+
+# VARIABLE INSTRUMENTAL | MATEMÁTICAS
+
+instrumental_model_Municipales_M <- lm(PTJE_NEM ~ SIMCEptjMATE, data = BaseMunicipales)
+
+NEM_hat_Municipales_M <- predict(instrumental_model_Municipales_M, newdata = BaseMunicipales)
+
+mco_model_Municipales_M <- lm(MATE_ACTUAL ~ NEM_hat_Municipales_M + Municipales + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = BaseMunicipales)
+
+Regresiones_1_MATE_M <- list(PDT_0_Municipales_M,PDT_1_Municipales_M,PDT_2_Municipales_M, mco_model_Municipales_M)
+
+stargazer(instrumental_model_Municipales_M,align=TRUE, type="latex")
+
+stargazer(Regresiones_1_MATE_M,align=TRUE, type="latex")
+
+# LENGUAJE:
+
+PDT_0_Municipales_L = lm(CLEC_ACTUAL ~ PTJE_NEM + Municipales, data = BaseMunicipales)
+
+
+PDT_1_Municipales_L = lm(CLEC_ACTUAL ~ PTJE_NEM + Municipales + COD_SEXO + AñosEducMadre + AñosEducPadre, data = BaseMunicipales)
+
+PDT_2_Municipales_L = lm(CLEC_ACTUAL ~ PTJE_NEM + Municipales + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = BaseMunicipales)
+
+Regresiones_0_L_Municipales <- list(PDT_0_Municipales_L,PDT_1_Municipales_L,PDT_2_Municipales_L)
+
+
+
+stargazer(Regresiones_0_L_Municipales,align=TRUE, type="latex")
+
+# VARIABLE INSTRUMENTAL | Lenguaje
+
+instrumental_model_Municipales_L <- lm(PTJE_NEM ~ SIMCEptjLENG, data = BaseMunicipales)
+
+NEM_hat_Municipales_L <- predict(instrumental_model_Municipales_L, newdata = BaseMunicipales)
+
+mco_model_Municipales_L <- lm(CLEC_ACTUAL ~ NEM_hat_Municipales_L + Municipales + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = BaseMunicipales)
+
+Regresiones_1_L_M <- list(PDT_0_Municipales_L,PDT_1_Municipales_L,PDT_2_Municipales_L, mco_model_Municipales_L)
+
+stargazer(Regresiones_1_L_M,align=TRUE, type="latex")
+
+stargazer(instrumental_model_Municipales_L,align=TRUE, type="latex")
+```
+
+
+
+
+
+
+```{r}
+
+########################################### COLEGIOS SUBVENCIONADOS ##############################################
+
+# MATEMÁTICAS
+
+Base$Subvencionados <- ifelse(Base$DEPENDENCIA==3,1,0)
+
+BaseSubvencionados <- Base[!Base$Subvencionados==0,]
+
+PDT_0_Subvencionado_M = lm(MATE_ACTUAL ~ PTJE_NEM + Subvencionados, data = BaseSubvencionados)
+
+PDT_1_Subvencionado_M = lm(MATE_ACTUAL ~ PTJE_NEM + Subvencionados + COD_SEXO + AñosEducMadre + AñosEducPadre, data = BaseSubvencionados)
+
+PDT_2_Subvencionado_M = lm(MATE_ACTUAL ~ PTJE_NEM + Subvencionados + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = BaseSubvencionados)
+
+Regresiones_0_MATE_S <- list(PDT_0_Subvencionado_M,PDT_1_Subvencionado_M,PDT_2_Subvencionado_M)
+
+stargazer(Regresiones_0_MATE_S,align=TRUE, type="latex")
+
+# VARIABLE INSTRUMENTAL | MATEMÁTICAS
+
+instrumental_model_Subvencionado <- lm(PTJE_NEM ~ SIMCEptjMATE, data = BaseSubvencionados)
+
+NEM_hat_Subvencionado <- predict(instrumental_model_Subvencionado, newdata = BaseSubvencionados)
+
+mco_model_Subvencionado_M <- lm(MATE_ACTUAL ~ NEM_hat_Subvencionado + Subvencionados + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = BaseSubvencionados)
+
+Regresiones_1_MATE_S <- list(PDT_0_Subvencionado_M,PDT_1_Subvencionado_M,PDT_2_Subvencionado_M,mco_model_Subvencionado_M)
+
+stargazer(Regresiones_1_MATE_S,align=TRUE, type="latex")
+
+stargazer(instrumental_model_Subvencionado,align=TRUE, type="latex")
+
+
+# LENGUAJE
+
+PDT_0_S_L = lm(CLEC_ACTUAL ~ PTJE_NEM, data =BaseSubvencionados)
+
+
+PDT_1_S_L = lm(CLEC_ACTUAL ~ PTJE_NEM+ COD_SEXO + AñosEducMadre + AñosEducPadre, data = BaseSubvencionados)
+
+PDT_2_S_L = lm(CLEC_ACTUAL ~ PTJE_NEM + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = BaseSubvencionados)
+
+# VARIABLE INSTRUMENTAL PARA PDT LENGUAJE
+
+instrumental_model_Subvencionado_L <- lm(PTJE_NEM ~ SIMCEptjLENG, data = BaseSubvencionados)
+
+NEM_hat_Subvencionado_L <- predict(instrumental_model_Subvencionado_L, newdata = BaseSubvencionados)
+
+mco_model_S_L <- lm(CLEC_ACTUAL ~ NEM_hat_Subvencionado_L + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = BaseSubvencionados)
+
+regresiones_leng_S <- list(PDT_0_S_L, PDT_1_S_L, PDT_2_S_L,mco_model_S_L)
+
+stargazer(instrumental_model_Subvencionado_L,align=TRUE, type="latex")
+
+stargazer(regresiones_leng_S,align=TRUE, type="latex")
+
+##
+
+
+
+```
+
+
+```{r}
+################################## COLEGIOS PARTICULARES####################################################################
+
+## MATEMÁTICAS
+
+Base$Particulares <- ifelse(Base$DEPENDENCIA==4,1,0)
+
+BaseParticualares <- Base[!Base$Particulares==0,]
+
+
+PDT_0_Particulares_M = lm(MATE_ACTUAL ~ PTJE_NEM, data = BaseParticualares)
+
+
+PDT_1_Particulares_M = lm(MATE_ACTUAL ~ PTJE_NEM + Particulares + COD_SEXO + AñosEducMadre + AñosEducPadre , data = BaseParticualares)
+
+PDT_2_Particulares_M = lm(MATE_ACTUAL ~ PTJE_NEM + Particulares + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = BaseParticualares)
+
+Regresiones_0_MATE_Particulares <- list(PDT_0_Particulares_M,PDT_1_Particulares_M,PDT_2_Particulares_M)
+
+stargazer(Regresiones_0_MATE_Particulares,align=TRUE, type="latex")
+
+# VARIABLE INSTRUMENTAL
+
+instrumental_model_Particulares_M <- lm(PTJE_NEM ~ SIMCEptjMATE, data = BaseParticualares)
+
+NEM_hat_Particulares_M <- predict(instrumental_model_Particulares_M, newdata = BaseParticualares)
+
+mco_model_Particulares_M <- lm(MATE_ACTUAL ~ NEM_hat_Particulares_M + Particulares + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = BaseParticualares)
+
+Regresiones_1_MATE_P <- list(PDT_0_Particulares_M,PDT_1_Particulares_M,PDT_2_Particulares_M,mco_model_Particulares_M)
+
+stargazer(Regresiones_1_MATE_P,align=TRUE, type="latex")
+
+stargazer(instrumental_model_Particulares_M,align=TRUE, type="latex")
+
+# LENGUAJE
+
+
+PDT_0_Particulares_L = lm(CLEC_ACTUAL ~ PTJE_NEM, data = BaseParticualares)
+
+
+PDT_1_Particulares_L = lm(CLEC_ACTUAL ~ PTJE_NEM + COD_SEXO + AñosEducMadre + AñosEducPadre, data = BaseParticualares)
+
+PDT_2_Particulares_L = lm(CLEC_ACTUAL ~ PTJE_NEM + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = BaseParticualares)
+
+# VARIABLE INSTRUMENTAL PARA PDT LENGUAJE
+
+instrumental_model_Particulares_L <- lm(PTJE_NEM ~ SIMCEptjLENG, data = BaseParticualares)
+
+NEM_hat_Particulares_L <- predict(instrumental_model_Particulares_L, newdata = BaseParticualares)
+
+mco_model_Particulares_L <- lm(CLEC_ACTUAL~ NEM_hat_Particulares_L + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = BaseParticualares)
+
+regresiones_leng_part <- list(PDT_0_Particulares_L, PDT_1_Particulares_L, PDT_2_Particulares_L,mco_model_Particulares_L)
+
+stargazer(regresiones_leng_part,align=TRUE, type="latex")
+
+stargazer(instrumental_model_Particulares_L,align=TRUE, type="latex")
+
+# TABLA COLEGIOS PARTICULARES:
+
+Regresiones_c_particulares <- list(Regresiones_1_MATE_P,regresiones_leng_part)
+
+
+stargazer(Regresiones_c_particulares,align=TRUE, type="latex")
+
+
+```
+
+
+```{r}
+paper_muni <- list(PDT_2_Municipales_M,mco_model_Municipales_M)
+
+stargazer(paper_muni,align=TRUE, type="latex")
+
+paper_subv <- list(PDT_2_Subvencionado_M,mco_model_Subvencionado_M)
+
+stargazer(paper_subv,align=TRUE, type="latex")
+
+paper_part <- list(PDT_2_Particulares_M,mco_model_Particulares_M)
+
+stargazer(paper_part,align=TRUE, type="latex")
+
+stargazer(instrumental_model_Municipales_M, align=TRUE, type="latex")
+stargazer(instrumental_model_Subvencionado, align=TRUE, type="latex")
+stargazer(instrumental_model_Particulares_M, align=TRUE, type="latex")
+
+
+
+```
+
+
+```{r}
+#Para Matemáticas.
+
+ols_muni_M <- PDT_0_Municipales_M[["coefficients"]][["PTJE_NEM"]]
+
+ols_subv_M <- PDT_0_Subvencionado_M[["coefficients"]][["PTJE_NEM"]]
+
+ols_part_M <- PDT_0_Particulares_M[["coefficients"]][["PTJE_NEM"]]
+
+
+iv_muni_M <- mco_model_Municipales_M[["coefficients"]][["NEM_hat_Municipales_M"]]
+
+iv_subv_M <- mco_model_Subvencionado_M[["coefficients"]][["NEM_hat_Subvencionado"]]
+
+iv_part_M <- mco_model_Particulares_M[["coefficients"]][["NEM_hat_Particulares_M"]]
+
+
+ols_dependencia_M <- rbind(ols_muni_M, ols_subv_M, ols_part_M) 
+iv_dependencia_M <- rbind(iv_muni_M, iv_subv_M, iv_part_M) 
+
+tabla_M <- cbind(ols_dependencia_M, iv_dependencia_M)
+rownames(tabla_M) <- c("Colegios Municipales", "Colegios Subvencionados", "Colegios Particulares")
+colnames(tabla_M) <- c("OLS", "IV")
+
+
+stargazer(tabla_M,align=TRUE, type="latex")
+
+#Para Lenguaje.
+
+ols_muni_L <- PDT_0_Municipales_L[["coefficients"]][["PTJE_NEM"]]
+
+ols_subv_L <- PDT_0_S_L[["coefficients"]][["PTJE_NEM"]]
+
+ols_part_L <- PDT_0_Particulares_L[["coefficients"]][["PTJE_NEM"]]
+
+
+iv_muni_L <- mco_model_Municipales_L[["coefficients"]][["NEM_hat_Municipales_L"]]
+
+iv_subv_L <- mco_model_S_L[["coefficients"]][["NEM_hat_Subvencionado_L"]]
+
+iv_part_L <- mco_model_Particulares_L[["coefficients"]][["NEM_hat_Particulares_L"]]
+
+
+
+ols_dependencia_L <- rbind(ols_muni_L, ols_subv_L, ols_part_L) 
+iv_dependencia_L <- rbind(iv_muni_L, iv_subv_L, iv_part_L) 
+
+tabla_L <- cbind(ols_dependencia_L, iv_dependencia_L)
+rownames(tabla_L) <- c("Colegios Municipales", "Colegios Subvencionados", "Colegios Particulares")
+colnames(tabla_L) <- c("OLS", "IV")
+
+stargazer(tabla_L,align=TRUE, type="latex")
+
+
+
+
+
+```
+
+```{r}
+# GRAFI
+install.packages("scatterplot3d")
+library(scatterplot3d)
+scatterplot3d(density1, density2, density3, pch = 16, col = "blue", main = "Distribución del puntaje NEM según la dependencia")
+
+install.packages("plot3D")
+
+library(plot3D)
+
+NEM_Municiaples <- ifelse(Base$DEPENDENCIA==1|Base$DEPENDENCIA==2|Base$DEPENDENCIA==5|Base$DEPENDENCIA==6,Base$PTJE_NEM,0)
+NEM_Subv <- ifelse(Base$DEPENDENCIA==3,Base$PTJE_NEM,0)
+NEM_Particulares <- ifelse(Base$DEPENDENCIA==4,Base$PTJE_NEM,0)
+
+
+density1 <- density(BaseMunicipales$PTJE_NEM)
+density2 <- density(BaseSubvencionados$PTJE_NEM)
+density3 <- density(BaseParticualares$PTJE_NEM)
+
+
+xlim <- range(c(BaseMunicipales$PTJE_NEM, BaseSubvencionados$PTJE_NEM, BaseParticualares$PTJE_NEM))
+ylim <- range(c(density1$y, density2$y, density3$y))
+
+# Graficar las densidades
+cv <- plot(density1, xlim = xlim, ylim = ylim, main = "Densidad de tres variables",
+     xlab = "Valor", ylab = "Puntaje NEM", col = "#FF4040")
+lines(density2, col = "#2E8B57")
+lines(density3, col = "#0000EE") 
+
+legend("topleft", y = max(ylim), legend = c("Municipales", "Subvencionados", "Particulares"),
+       col = c("#FF4040", "#2E8B57", "#0000EE"), lty = 1)
+
+
+density12 <- density(BaseMunicipales$MATE_ACTUAL)
+density22 <- density(BaseSubvencionados$MATE_ACTUAL)
+density32 <- density(BaseParticualares$MATE_ACTUAL)
+
+xlim_x <- range(c(na.omit(BaseMunicipales$MATE_ACTUAL), na.omit(BaseSubvencionados$MATE_ACTUAL), na.omit(BaseParticualares$MATE_ACTUAL)))
+ylim_y <- range(c(density12$y, density22$y, density32$y))
+
+
+cv2 <- plot(density12, xlim = xlim_x, ylim = ylim_y, main = "Distribución del puntaje NEM según la dependencia",
+     xlab = "Valor", ylab = "Puntaje PDT", col = "#FF4040")
+lines(density22, col = "#2E8B57")
+lines(density32, col = "#0000EE") 
+
+legend("topleft", y = max(ylim), legend = c("Municipales", "Subvencionados", "Particulares"),
+       col = c("#FF4040", "#2E8B57", "#0000EE"), lty = 1)
+
+
+
+pdf("C:/Users/Hiare/OneDrive/Escritorio/Uchile/OTOÑO 2023/Microeconomía 3/Paper propio/grafico1.pdf",width = 8.5,height = 5)
+par(ask=F)
+plot(density1, xlim = xlim, ylim = ylim, main = "Distribución del puntaje NEM según la dependencia",
+     xlab = "Puntaje NEM", ylab = "Densidad", col = "#FF4040")
+lines(density2, col = "#2E8B57")
+lines(density3, col = "#0000EE") 
+
+legend("topleft", y = max(ylim), legend = c("Municipales", "Subvencionados", "Particulares"),
+       col = c("#FF4040", "#2E8B57", "#0000EE"), lty = 1)
+dev.off()
+
+
+par(mfrow = c(2, 1), mar = c(4, 4, 2, 1))
+
+# Graficar los dos gráficos juntos en una sola imagen alargada
+cv
+cv2
+
+# Restaurar la configuración por defecto
+
+pdf("C:/Users/Hiare/OneDrive/Escritorio/Uchile/OTOÑO 2023/Microeconomía 3/Paper propio/grafico2.pdf",width = 8.5,height = 5)
+par(ask=F)
+par(mfrow = c(2, 1), mar = c(4, 4, 2, 1))
+plot(density1, xlim = xlim, ylim = ylim, main = "Distribución del puntaje NEM según la dependencia",
+     xlab = "Puntaje NEM", ylab = "Densidad", col = "#FF4040")
+lines(density2, col = "#2E8B57")
+lines(density3, col = "#0000EE") 
+
+legend("topleft", y = max(ylim), legend = c("Municipales", "Subvencionados", "Particulares"),
+       col = c("#FF4040", "#2E8B57", "#0000EE"), lty = 1)
+
+plot(density12, xlim = xlim_x, ylim = ylim_y, main = "Distribución del puntaje PDT según la dependencia",
+     xlab = "Puntaje PDT", ylab = "Densidad", col = "#FF4040")
+lines(density22, col = "#2E8B57")
+lines(density32, col = "#0000EE") 
+
+legend("topleft", y = max(ylim), legend = c("Municipales", "Subvencionados", "Particulares"),
+       col = c("#FF4040", "#2E8B57", "#0000EE"), lty = 1)
+par(mfrow = c(1, 1), mar = c(4, 4, 2, 1))
+dev.off()
+
+```
+
+
+# TEST T
+```{r}
+# MUNICIPALES Y SUBVENCIONADOS 
+t.test(mco_model_Municipales_M  ~ mco_model_Subvencionado_M, conf.int=T)
+
+
+
+mco_model_Municipales_M <- lm(MATE_ACTUAL ~ NEM_hat_Municipales_M + Municipales + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = BaseMunicipales)
+
+
+
+mco_model_Subvencionado_M <- lm(MATE_ACTUAL ~ NEM_hat_Subvencionado + Subvencionados + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = BaseSubvencionados)
+
+
+coef_Municipales_M <- coef(mco_model_Municipales_M)["NEM_hat_Municipales_M"]
+coef_Subvencionado_M <- coef(mco_model_Subvencionado_M)["NEM_hat_Subvencionado"]
+
+se_diff <- sqrt(vcov(mco_model_Municipales_M)["NEM_hat_Municipales_M", "NEM_hat_Municipales_M"] +
+                vcov(mco_model_Subvencionado_M)["NEM_hat_Subvencionado", "NEM_hat_Subvencionado"])
+
+estadistico_t <- (coef_Municipales_M - coef_Subvencionado_M) / se_diff
+valor_p <- 2 * pt(abs(estadistico_t), df = Inf, lower.tail = FALSE)
+
+print(estadistico_t)
+print(valor_p)
+
+
+# PARTICULAR Y MUNICIPAL
+
+mco_model_Municipales_M <- lm(MATE_ACTUAL ~ NEM_hat_Municipales_M + Municipales + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = BaseMunicipales)
+
+mco_model_Particulares_M <- lm(MATE_ACTUAL ~ NEM_hat_Particulares_M + Particulares + COD_SEXO + AñosEducMadre + AñosEducPadre + INGRESO_PERCAPITA_GRUPO_FA, data = BaseParticualares)
+
+coef_Municipales_M <- coef(mco_model_Municipales_M)["NEM_hat_Municipales_M"]
+coef_Particulares_M <- coef(mco_model_Particulares_M)["NEM_hat_Particulares_M"]
+
+se_diff_2 <- sqrt(vcov(mco_model_Municipales_M)["NEM_hat_Municipales_M", "NEM_hat_Municipales_M"] +
+                vcov(mco_model_Particulares_M)["NEM_hat_Particulares_M", "NEM_hat_Particulares_M"])
+
+estadistico_t_2 <- (coef_Municipales_M - coef_Particulares_M) / se_diff_2
+valor_p_2 <- 2 * pt(abs(estadistico_t_2), df = Inf, lower.tail = FALSE)
+
+print(estadistico_t_2)
+print(valor_p_2)
+
+# SUBVENCIONADO Y Particulares
+
+coef_Subvencionado_M <- coef(mco_model_Subvencionado_M)["NEM_hat_Subvencionado"]
+coef_Particulares_M <- coef(mco_model_Particulares_M)["NEM_hat_Particulares_M"]
+
+se_diff_3 <- sqrt(vcov(mco_model_Subvencionado_M)["NEM_hat_Subvencionado", "NEM_hat_Subvencionado"] +
+                vcov(mco_model_Particulares_M)["NEM_hat_Particulares_M", "NEM_hat_Particulares_M"])
+
+estadistico_t_3 <- (coef_Subvencionado_M - coef_Particulares_M) / se_diff_3
+valor_p_3 <- 2 * pt(abs(estadistico_t_3), df = Inf, lower.tail = FALSE)
+
+print(estadistico_t_3)
+print(valor_p_3)
+
+
+# TABLA
+
+Colegiosnames <- rbind("Municipales y Particulres subvencionados","Municipales y Particulares pagados","Particulres subvencionados y Particulares pagados")
+
+Valores <- cbind("Estadístico t","Valor p")
+
+MunipalesySUvb <- cbind(estadistico_t,valor_p)
+MunipalesyPART <- cbind(estadistico_t_2,valor_p_2)
+PartiySubv <- cbind(estadistico_t_3,valor_p_3)
+
+Dtaframe <- data.frame(rbind(MunipalesySUvb,MunipalesyPART,PartiySubv))
+
+colnames(Dtaframe) <- c("Estadístico t","Valor p")
+
+rownames(Dtaframe) <- c("Municipales y Particulres subvencionados","Municipales y Particulares pagados","Particulres subvencionados y Particulares pagados")
+
+Dtaframe <- round(Dtaframe,4)
+
+xtable(Dtaframe)
+
+```
