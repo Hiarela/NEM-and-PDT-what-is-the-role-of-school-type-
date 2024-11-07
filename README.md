@@ -8,7 +8,7 @@ code.Rmd: This script performs the main analysis, including data cleaning, mergi
 Robustness_check.Rmd: This script includes the robustness analysis, re-estimating the main effects using an alternative instrumental variable (SIMCE scores from fourth grade) to validate the consistency of the results across different school types.
 
 Data:
-The repository includes datasets with:
+The repository use:
 1. NEM and PDT Scores: High school grades and university entrance test scores.
 2. School Dependency Type: Indicates whether a student attended a public, subsidized, or private school.
 3. Additional Socioeconomic and Demographic Variables: Used for control and analysis in the regression models.
